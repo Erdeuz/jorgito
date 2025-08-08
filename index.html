@@ -251,77 +251,82 @@
         }
 
         function updateJorge(deltaTime) {
-            // Controles de movimiento con física realista
-            if (keys.left && jorge.speed > 1) {
-                jorge.turnSpeed = Math.max(jorge.turnSpeed - 0.5, -jorge.maxTurnSpeed);
-            } else if (keys.right && jorge.speed > 1) {
-                jorge.turnSpeed = Math.min(jorge.turnSpeed + 0.5, jorge.maxTurnSpeed);
+            // Movimiento lateral directo
+            if (keys.left) {
+                jorge.x -= 4; // Movimiento lateral izquierda
+                jorge.angle = Math.max(jorge.angle - 2, -15); // Inclinación visual
+            } else if (keys.right) {
+                jorge.x += 4; // Movimiento lateral derecha  
+                jorge.angle = Math.min(jorge.angle + 2, 15); // Inclinación visual
             } else {
-                jorge.turnSpeed *= 0.9; // Fricción del giro
+                // Volver a la posición recta gradualmente
+                jorge.angle *= 0.9;
             }
-
-            // El giro es más difícil a mayor velocidad
-            jorge.angle += jorge.turnSpeed * (1 / Math.max(jorge.speed * 0.3, 1));
 
             // Aceleración y frenado
             if (keys.up && jorge.fuel > 0) {
                 jorge.speed = Math.min(jorge.speed + jorge.acceleration, jorge.maxSpeed);
-                jorge.fuel -= jorge.fuelConsumption * (jorge.speed * 0.1 + 1);
+                jorge.fuel -= jorge.fuelConsumption * Math.max(0.3, jorge.speed * 0.03);
             } else if (keys.down) {
-                jorge.speed = Math.max(jorge.speed - jorge.acceleration * 2, 0);
+                jorge.speed = Math.max(jorge.speed - jorge.acceleration * 1.5, 0);
             } else {
-                jorge.speed *= jorge.friction; // Fricción natural
+                jorge.speed *= 0.98; // Fricción
             }
 
-            // Sin combustible, pérdida gradual de velocidad
+            // Velocidad mínima cuando acelera
+            if (jorge.speed < 2 && keys.up && jorge.fuel > 0) {
+                jorge.speed = 2;
+            }
+
+            // Sin combustible, pérdida gradual
             if (jorge.fuel <= 0) {
-                jorge.speed *= 0.98;
+                jorge.speed *= 0.995;
                 jorge.fuel = 0;
             }
 
-            // Movimiento basado en ángulo (más realista)
-            const radians = (jorge.angle - 90) * Math.PI / 180;
-            jorge.x += Math.cos(radians) * jorge.speed;
-            jorge.y += Math.sin(radians) * jorge.speed;
-
-            // Mantener a Jorge en pantalla
+            // Movimiento hacia adelante (simulación de velocidad)
+            // En realidad Jorge se queda en su zona, pero el fondo se mueve
+            
+            // Mantener a Jorge en pantalla horizontalmente
             jorge.x = Math.max(jorge.width/2, Math.min(canvas.width - jorge.width/2, jorge.x));
-            jorge.y = Math.max(jorge.height/2, Math.min(canvas.height - jorge.height/2, jorge.y));
+            
+            // Jorge se mantiene en la parte baja de la pantalla
+            jorge.y = Math.max(canvas.height * 0.7, Math.min(canvas.height - jorge.height/2 - 10, jorge.y));
 
-            // Puntuación basada en velocidad y supervivencia
-            score += Math.floor(jorge.speed * 2);
+            // Puntuación basada en supervivencia y velocidad
+            score += Math.floor(jorge.speed + 1);
         }
 
         function spawnObstacle() {
-            if (Math.random() < 0.02 + gameTime * 0.0001) { // Frecuencia aumenta con el tiempo
+            if (Math.random() < 0.008 + gameTime * 0.000005) { // Frecuencia más baja
                 obstacles.push({
-                    x: Math.random() * (canvas.width - 40) + 20,
+                    x: Math.random() * (canvas.width - 60) + 30,
                     y: -30,
-                    width: 30 + Math.random() * 20,
-                    height: 30 + Math.random() * 20,
-                    speed: 2 + Math.random() * 3 + gameTime * 0.01,
-                    type: Math.random() < 0.5 ? 'rock' : 'oil'
+                    width: 25 + Math.random() * 15,
+                    height: 25 + Math.random() * 15,
+                    speed: 1.5 + Math.random() * 2 + gameTime * 0.005,
+                    type: Math.random() < 0.7 ? 'rock' : 'oil'
                 });
             }
         }
 
         function spawnEnemy() {
-            if (Math.random() < 0.015 + gameTime * 0.00008) {
+            if (Math.random() < 0.006 + gameTime * 0.000003) { // Menos frecuente
                 enemies.push({
-                    x: Math.random() * (canvas.width - 40) + 20,
+                    x: Math.random() * (canvas.width - 50) + 25,
                     y: -50,
                     width: 28,
                     height: 45,
-                    speed: 3 + Math.random() * 4 + gameTime * 0.015,
-                    swerveOffset: Math.random() * 2 - 1,
-                    swerveSpeed: 0.05 + Math.random() * 0.05
+                    speed: 2 + Math.random() * 2.5 + gameTime * 0.008,
+                    swerveOffset: Math.random() * 1 - 0.5, // Menos errático
+                    swerveSpeed: 0.02 + Math.random() * 0.03
                 });
             }
         }
 
         function updateObstacles() {
             obstacles = obstacles.filter(obstacle => {
-                obstacle.y += obstacle.speed;
+                obstacle.y += obstacle.speed + jorge.speed * 0.5; // Se mueven más rápido según la velocidad de Jorge
                 
                 // Efectos especiales del petróleo
                 if (obstacle.type === 'oil') {
@@ -345,7 +350,7 @@
 
         function updateEnemies() {
             enemies = enemies.filter(enemy => {
-                enemy.y += enemy.speed;
+                enemy.y += enemy.speed + jorge.speed * 0.5; // Se mueven más rápido según la velocidad de Jorge
                 
                 // Movimiento serpenteante para mayor dificultad
                 enemy.x += Math.sin(enemy.y * enemy.swerveSpeed) * enemy.swerveOffset;
@@ -357,7 +362,7 @@
 
         function updateRoadLines() {
             roadLines.forEach(line => {
-                line.y += 4 + jorge.speed * 0.5;
+                line.y += 3 + jorge.speed * 0.8; // Velocidad del fondo basada en la velocidad de Jorge
                 if (line.y > canvas.height) {
                     line.y = -30;
                 }
@@ -385,10 +390,12 @@
             for (let obstacle of obstacles) {
                 if (rectanglesCollide(jorgeRect, obstacle)) {
                     if (obstacle.type === 'oil') {
-                        // El petróleo hace que Jorge patine
-                        jorge.turnSpeed += (Math.random() - 0.5) * 8;
-                        jorge.speed *= 1.1; // Acelera incontrolablemente
+                        // El petróleo hace que Jorge patine pero de forma más controlable
+                        jorge.turnSpeed += (Math.random() - 0.5) * 3;
+                        jorge.speed *= 1.05; // Acelera menos
                         createCrashParticles(jorge.x, jorge.y, '#001100');
+                        // Remover el obstáculo después del contacto con petróleo
+                        obstacles.splice(obstacles.indexOf(obstacle), 1);
                     } else {
                         endGame();
                         return;
@@ -548,8 +555,8 @@
             // Actualizar UI
             updateUI();
 
-            // Sin combustible = game over
-            if (jorge.fuel <= 0 && jorge.speed < 0.5) {
+            // Sin combustible = game over (más tiempo para reaccionar)
+            if (jorge.fuel <= 0 && jorge.speed < 0.1) {
                 endGame();
                 return;
             }
