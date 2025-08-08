@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carrera de Jorge</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(180deg, #001122 0%, #003366 100%);
+            font-family: 'Courier New', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: white;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            background: #333;
+            border: 3px solid #fff;
+            overflow: hidden;
+        }
+
+        #gameCanvas {
+            display: block;
+            background: linear-gradient(to bottom, #444 0%, #222 50%, #444 100%);
+        }
+
+        #gameInfo {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 100;
+            font-size: 18px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            padding: 30px;
+            border: 3px solid #ff0000;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 200;
+            display: none;
+        }
+
+        #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 300;
+        }
+
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: linear-gradient(45deg, #ff6600, #ff9900);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.1);
+        }
+
+        .instructions {
+            text-align: center;
+            margin: 20px 0;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        
+        <div id="gameInfo">
+            <div>Piloto: Jorge</div>
+            <div>Puntuación: <span id="score">0</span></div>
+            <div>Velocidad: <span id="speed">0</span> km/h</div>
+            <div>Combustible: <span id="fuel">100</span>%</div>
+        </div>
+
+        <div id="startScreen">
+            <h1 style="color: #ff6600; font-size: 36px; margin-bottom: 20px;">🏎️ CARRERA DE JORGE 🏎️</h1>
+            <div class="instructions">
+                <h3>¡Un juego que requiere máxima habilidad!</h3>
+                <p><strong>Controles:</strong></p>
+                <p>← → Girar | ↑ Acelerar | ↓ Frenar</p>
+                <p><strong>Objetivo:</strong> Esquiva obstáculos y autos enemigos</p>
+                <p><strong>Desafíos:</strong></p>
+                <p>• El combustible se agota constantemente</p>
+                <p>• La velocidad afecta el control</p>
+                <p>• Los enemigos aparecen más rápido con el tiempo</p>
+                <p>• ¡Mantén a Jorge vivo el mayor tiempo posible!</p>
+            </div>
+            <button onclick="startGame()">INICIAR CARRERA</button>
+        </div>
+
+        <div id="gameOver">
+            <h2 style="color: #ff0000;">¡JORGE HA CHOCADO!</h2>
+            <p>Puntuación Final: <span id="finalScore">0</span></p>
+            <p>Tiempo Sobrevivido: <span id="survivalTime">0</span>s</p>
+            <button onclick="restartGame()">INTENTAR DE NUEVO</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Variables del juego
+        let gameState = 'menu'; // menu, playing, gameOver
+        let score = 0;
+        let gameTime = 0;
+        let lastTime = 0;
+
+        // Jorge (el jugador)
+        const jorge = {
+            x: canvas.width / 2,
+            y: canvas.height - 80,
+            width: 30,
+            height: 50,
+            speed: 0,
+            maxSpeed: 8,
+            acceleration: 0.3,
+            friction: 0.95,
+            turnSpeed: 0,
+            maxTurnSpeed: 5,
+            angle: 0,
+            fuel: 100,
+            fuelConsumption: 0.1
+        };
+
+        // Arrays para obstáculos y enemigos
+        let obstacles = [];
+        let enemies = [];
+        let roadLines = [];
+
+        // Efectos visuales
+        let particles = [];
+
+        // Controles
+        const keys = {
+            left: false,
+            right: false,
+            up: false,
+            down: false
+        };
+
+        // Inicializar líneas de carretera
+        function initRoadLines() {
+            roadLines = [];
+            for (let i = 0; i < 15; i++) {
+                roadLines.push({
+                    x: canvas.width / 2,
+                    y: i * 50,
+                    width: 4,
+                    height: 30
+                });
+            }
+        }
+
+        // Event listeners para controles
+        document.addEventListener('keydown', (e) => {
+            switch(e.code) {
+                case 'ArrowLeft':
+                    keys.left = true;
+                    e.preventDefault();
+                    break;
+                case 'ArrowRight':
+                    keys.right = true;
+                    e.preventDefault();
+                    break;
+                case 'ArrowUp':
+                    keys.up = true;
+                    e.preventDefault();
+                    break;
+                case 'ArrowDown':
+                    keys.down = true;
+                    e.preventDefault();
+                    break;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            switch(e.code) {
+                case 'ArrowLeft':
+                    keys.left = false;
+                    break;
+                case 'ArrowRight':
+                    keys.right = false;
+                    break;
+                case 'ArrowUp':
+                    keys.up = false;
+                    break;
+                case 'ArrowDown':
+                    keys.down = false;
+                    break;
+            }
+        });
+
+        function startGame() {
+            document.getElementById('startScreen').style.display = 'none';
+            gameState = 'playing';
+            resetGame();
+            initRoadLines();
+            gameLoop();
+        }
+
+        function resetGame() {
+            jorge.x = canvas.width / 2;
+            jorge.y = canvas.height - 80;
+            jorge.speed = 0;
+            jorge.angle = 0;
+            jorge.fuel = 100;
+            score = 0;
+            gameTime = 0;
+            obstacles = [];
+            enemies = [];
+            particles = [];
+            updateUI();
+        }
+
+        function restartGame() {
+            document.getElementById('gameOver').style.display = 'none';
+            gameState = 'playing';
+            resetGame();
+            gameLoop();
+        }
+
+        function updateJorge(deltaTime) {
+            // Controles de movimiento con física realista
+            if (keys.left && jorge.speed > 1) {
+                jorge.turnSpeed = Math.max(jorge.turnSpeed - 0.5, -jorge.maxTurnSpeed);
+            } else if (keys.right && jorge.speed > 1) {
+                jorge.turnSpeed = Math.min(jorge.turnSpeed + 0.5, jorge.maxTurnSpeed);
+            } else {
+                jorge.turnSpeed *= 0.9; // Fricción del giro
+            }
+
+            // El giro es más difícil a mayor velocidad
+            jorge.angle += jorge.turnSpeed * (1 / Math.max(jorge.speed * 0.3, 1));
+
+            // Aceleración y frenado
+            if (keys.up && jorge.fuel > 0) {
+                jorge.speed = Math.min(jorge.speed + jorge.acceleration, jorge.maxSpeed);
+                jorge.fuel -= jorge.fuelConsumption * (jorge.speed * 0.1 + 1);
+            } else if (keys.down) {
+                jorge.speed = Math.max(jorge.speed - jorge.acceleration * 2, 0);
+            } else {
+                jorge.speed *= jorge.friction; // Fricción natural
+            }
+
+            // Sin combustible, pérdida gradual de velocidad
+            if (jorge.fuel <= 0) {
+                jorge.speed *= 0.98;
+                jorge.fuel = 0;
+            }
+
+            // Movimiento basado en ángulo (más realista)
+            const radians = (jorge.angle - 90) * Math.PI / 180;
+            jorge.x += Math.cos(radians) * jorge.speed;
+            jorge.y += Math.sin(radians) * jorge.speed;
+
+            // Mantener a Jorge en pantalla
+            jorge.x = Math.max(jorge.width/2, Math.min(canvas.width - jorge.width/2, jorge.x));
+            jorge.y = Math.max(jorge.height/2, Math.min(canvas.height - jorge.height/2, jorge.y));
+
+            // Puntuación basada en velocidad y supervivencia
+            score += Math.floor(jorge.speed * 2);
+        }
+
+        function spawnObstacle() {
+            if (Math.random() < 0.02 + gameTime * 0.0001) { // Frecuencia aumenta con el tiempo
+                obstacles.push({
+                    x: Math.random() * (canvas.width - 40) + 20,
+                    y: -30,
+                    width: 30 + Math.random() * 20,
+                    height: 30 + Math.random() * 20,
+                    speed: 2 + Math.random() * 3 + gameTime * 0.01,
+                    type: Math.random() < 0.5 ? 'rock' : 'oil'
+                });
+            }
+        }
+
+        function spawnEnemy() {
+            if (Math.random() < 0.015 + gameTime * 0.00008) {
+                enemies.push({
+                    x: Math.random() * (canvas.width - 40) + 20,
+                    y: -50,
+                    width: 28,
+                    height: 45,
+                    speed: 3 + Math.random() * 4 + gameTime * 0.015,
+                    swerveOffset: Math.random() * 2 - 1,
+                    swerveSpeed: 0.05 + Math.random() * 0.05
+                });
+            }
+        }
+
+        function updateObstacles() {
+            obstacles = obstacles.filter(obstacle => {
+                obstacle.y += obstacle.speed;
+                
+                // Efectos especiales del petróleo
+                if (obstacle.type === 'oil') {
+                    // Crear partículas de petróleo
+                    if (Math.random() < 0.3) {
+                        particles.push({
+                            x: obstacle.x + Math.random() * obstacle.width,
+                            y: obstacle.y + Math.random() * obstacle.height,
+                            vx: (Math.random() - 0.5) * 2,
+                            vy: Math.random() * 2 + 1,
+                            life: 30,
+                            maxLife: 30,
+                            color: '#001100'
+                        });
+                    }
+                }
+                
+                return obstacle.y < canvas.height + 50;
+            });
+        }
+
+        function updateEnemies() {
+            enemies = enemies.filter(enemy => {
+                enemy.y += enemy.speed;
+                
+                // Movimiento serpenteante para mayor dificultad
+                enemy.x += Math.sin(enemy.y * enemy.swerveSpeed) * enemy.swerveOffset;
+                enemy.x = Math.max(20, Math.min(canvas.width - 40, enemy.x));
+                
+                return enemy.y < canvas.height + 50;
+            });
+        }
+
+        function updateRoadLines() {
+            roadLines.forEach(line => {
+                line.y += 4 + jorge.speed * 0.5;
+                if (line.y > canvas.height) {
+                    line.y = -30;
+                }
+            });
+        }
+
+        function updateParticles() {
+            particles = particles.filter(particle => {
+                particle.x += particle.vx;
+                particle.y += particle.vy;
+                particle.life--;
+                return particle.life > 0;
+            });
+        }
+
+        function checkCollisions() {
+            const jorgeRect = {
+                x: jorge.x - jorge.width/2,
+                y: jorge.y - jorge.height/2,
+                width: jorge.width,
+                height: jorge.height
+            };
+
+            // Colisiones con obstáculos
+            for (let obstacle of obstacles) {
+                if (rectanglesCollide(jorgeRect, obstacle)) {
+                    if (obstacle.type === 'oil') {
+                        // El petróleo hace que Jorge patine
+                        jorge.turnSpeed += (Math.random() - 0.5) * 8;
+                        jorge.speed *= 1.1; // Acelera incontrolablemente
+                        createCrashParticles(jorge.x, jorge.y, '#001100');
+                    } else {
+                        endGame();
+                        return;
+                    }
+                }
+            }
+
+            // Colisiones con enemigos
+            for (let enemy of enemies) {
+                if (rectanglesCollide(jorgeRect, enemy)) {
+                    endGame();
+                    return;
+                }
+            }
+        }
+
+        function rectanglesCollide(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width &&
+                   rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height &&
+                   rect1.y + rect1.height > rect2.y;
+        }
+
+        function createCrashParticles(x, y, color = '#ff4444') {
+            for (let i = 0; i < 10; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    life: 60,
+                    maxLife: 60,
+                    color: color
+                });
+            }
+        }
+
+        function drawJorge() {
+            ctx.save();
+            ctx.translate(jorge.x, jorge.y);
+            ctx.rotate(jorge.angle * Math.PI / 180);
+            
+            // Cuerpo del auto (Jorge)
+            ctx.fillStyle = '#ff3333';
+            ctx.fillRect(-jorge.width/2, -jorge.height/2, jorge.width, jorge.height);
+            
+            // Detalles del auto
+            ctx.fillStyle = '#990000';
+            ctx.fillRect(-jorge.width/2 + 5, -jorge.height/2 + 5, jorge.width - 10, 10);
+            
+            // Ventanas
+            ctx.fillStyle = '#4444ff';
+            ctx.fillRect(-jorge.width/2 + 3, -jorge.height/2 + 8, jorge.width - 6, 8);
+            
+            ctx.restore();
+
+            // Nombre del piloto
+            ctx.fillStyle = 'white';
+            ctx.font = '12px Courier';
+            ctx.textAlign = 'center';
+            ctx.fillText('JORGE', jorge.x, jorge.y + jorge.height/2 + 15);
+        }
+
+        function drawObstacles() {
+            obstacles.forEach(obstacle => {
+                if (obstacle.type === 'rock') {
+                    ctx.fillStyle = '#666666';
+                    ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                    ctx.fillStyle = '#999999';
+                    ctx.fillRect(obstacle.x + 2, obstacle.y + 2, obstacle.width - 4, obstacle.height - 4);
+                } else {
+                    // Petróleo
+                    ctx.fillStyle = '#001100';
+                    ctx.beginPath();
+                    ctx.ellipse(obstacle.x + obstacle.width/2, obstacle.y + obstacle.height/2, 
+                               obstacle.width/2, obstacle.height/2, 0, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            });
+        }
+
+        function drawEnemies() {
+            enemies.forEach(enemy => {
+                ctx.fillStyle = '#ffff00';
+                ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                
+                // Detalles del enemigo
+                ctx.fillStyle = '#ff8800';
+                ctx.fillRect(enemy.x + 2, enemy.y + 2, enemy.width - 4, 8);
+                
+                // Ventanas
+                ctx.fillStyle = '#000088';
+                ctx.fillRect(enemy.x + 3, enemy.y + 12, enemy.width - 6, 8);
+            });
+        }
+
+        function drawRoadLines() {
+            ctx.fillStyle = '#ffffff';
+            roadLines.forEach(line => {
+                ctx.fillRect(line.x - line.width/2, line.y, line.width, line.height);
+            });
+        }
+
+        function drawParticles() {
+            particles.forEach(particle => {
+                const alpha = particle.life / particle.maxLife;
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = particle.color;
+                ctx.fillRect(particle.x - 2, particle.y - 2, 4, 4);
+            });
+            ctx.globalAlpha = 1;
+        }
+
+        function updateUI() {
+            document.getElementById('score').textContent = Math.floor(score);
+            document.getElementById('speed').textContent = Math.floor(jorge.speed * 10);
+            document.getElementById('fuel').textContent = Math.floor(jorge.fuel);
+        }
+
+        function endGame() {
+            gameState = 'gameOver';
+            document.getElementById('finalScore').textContent = Math.floor(score);
+            document.getElementById('survivalTime').textContent = Math.floor(gameTime / 1000);
+            document.getElementById('gameOver').style.display = 'block';
+            
+            createCrashParticles(jorge.x, jorge.y);
+        }
+
+        function gameLoop(currentTime = 0) {
+            if (gameState !== 'playing') return;
+
+            const deltaTime = currentTime - lastTime;
+            lastTime = currentTime;
+            gameTime += deltaTime;
+
+            // Actualizar juego
+            updateJorge(deltaTime);
+            spawnObstacle();
+            spawnEnemy();
+            updateObstacles();
+            updateEnemies();
+            updateRoadLines();
+            updateParticles();
+            checkCollisions();
+
+            // Limpiar canvas
+            ctx.fillStyle = '#333333';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Dibujar elementos
+            drawRoadLines();
+            drawObstacles();
+            drawEnemies();
+            drawJorge();
+            drawParticles();
+
+            // Actualizar UI
+            updateUI();
+
+            // Sin combustible = game over
+            if (jorge.fuel <= 0 && jorge.speed < 0.5) {
+                endGame();
+                return;
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Inicializar el juego
+        initRoadLines();
+    </script>
+</body>
+</html>
