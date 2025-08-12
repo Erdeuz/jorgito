@@ -167,20 +167,12 @@
         </div>
     </div>
 
-    <!-- Audio para música de fondo -->
-    <audio id="bgMusic" loop>
-        <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEcBjiR1/LNeSsFJHfH8N2QQAoUXrTp66hVFA==" type="audio/wav">
-    </audio>
-
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const bgMusic = document.getElementById('bgMusic');
 
         // Variables de música
         let musicEnabled = true;
-
-        // Crear una melodía de ópera clásica simple usando Web Audio API
         let audioContext;
         let musicGain;
         let currentOscillators = [];
@@ -190,7 +182,7 @@
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 musicGain = audioContext.createGain();
                 musicGain.connect(audioContext.destination);
-                musicGain.gain.value = 0.1; // Volumen bajo
+                musicGain.gain.value = 0.1;
             }
         }
 
@@ -207,7 +199,6 @@
                 oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
                 oscillator.type = 'sine';
                 
-                // Envelope para sonar más como ópera
                 gainNode.gain.setValueAtTime(0, audioContext.currentTime);
                 gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.1);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
@@ -222,7 +213,6 @@
         function playOperaMelody() {
             if (!musicEnabled) return;
             
-            // Melodía inspirada en "La donna è mobile" de Rigoletto
             const melody = [
                 {note: 523.25, duration: 0.5}, // C5
                 {note: 587.33, duration: 0.5}, // D5
@@ -241,7 +231,6 @@
                 currentTime += note.duration;
             });
             
-            // Repetir la melodía
             setTimeout(playOperaMelody, currentTime * 1000 + 2000);
         }
 
@@ -265,7 +254,7 @@
         }
 
         // Variables del juego
-        let gameState = 'menu'; // menu, playing, gameOver
+        let gameState = 'menu';
         let score = 0;
         let gameTime = 0;
         let lastTime = 0;
@@ -277,25 +266,21 @@
             width: 30,
             height: 50,
             speed: 0,
-            maxSpeed: 4, // Reducido de 8 a 4
-            acceleration: 0.15, // Reducido de 0.3 a 0.15
-            friction: 0.98, // Más fricción (era 0.95)
+            maxSpeed: 4,
+            acceleration: 0.15,
+            friction: 0.98,
             turnSpeed: 0,
-            maxTurnSpeed: 3, // Reducido de 5 a 3
+            maxTurnSpeed: 3,
             angle: 0,
             fuel: 100,
-            fuelConsumption: 0.05 // Reducido de 0.1 a 0.05
+            fuelConsumption: 0.05
         };
 
-        // Arrays para obstáculos y enemigos
         let obstacles = [];
         let enemies = [];
         let roadLines = [];
-
-        // Efectos visuales
         let particles = [];
 
-        // Controles
         const keys = {
             left: false,
             right: false,
@@ -303,7 +288,6 @@
             down: false
         };
 
-        // Inicializar líneas de carretera
         function initRoadLines() {
             roadLines = [];
             for (let i = 0; i < 15; i++) {
@@ -316,7 +300,6 @@
             }
         }
 
-        // Event listeners para controles
         document.addEventListener('keydown', (e) => {
             switch(e.code) {
                 case 'ArrowLeft':
@@ -392,81 +375,71 @@
         }
 
         function updateJorge(deltaTime) {
-            // Movimiento lateral directo - REDUCIDO
             if (keys.left) {
-                jorge.x -= 2; // Reducido de 4 a 2
-                jorge.angle = Math.max(jorge.angle - 1.5, -10); // Menos inclinación
+                jorge.x -= 2;
+                jorge.angle = Math.max(jorge.angle - 1.5, -10);
             } else if (keys.right) {
-                jorge.x += 2; // Reducido de 4 a 2
-                jorge.angle = Math.min(jorge.angle + 1.5, 10); // Menos inclinación
+                jorge.x += 2;
+                jorge.angle = Math.min(jorge.angle + 1.5, 10);
             } else {
-                // Volver a la posición recta gradualmente
                 jorge.angle *= 0.9;
             }
 
-            // Aceleración y frenado
             if (keys.up && jorge.fuel > 0) {
                 jorge.speed = Math.min(jorge.speed + jorge.acceleration, jorge.maxSpeed);
                 jorge.fuel -= jorge.fuelConsumption * Math.max(0.3, jorge.speed * 0.02);
             } else if (keys.down) {
                 jorge.speed = Math.max(jorge.speed - jorge.acceleration * 1.5, 0);
             } else {
-                jorge.speed *= 0.99; // Más fricción
+                jorge.speed *= 0.99;
             }
 
-            // Velocidad mínima cuando acelera - REDUCIDA
             if (jorge.speed < 1 && keys.up && jorge.fuel > 0) {
-                jorge.speed = 1; // Reducido de 2 a 1
+                jorge.speed = 1;
             }
 
-            // Sin combustible, pérdida gradual
             if (jorge.fuel <= 0) {
                 jorge.speed *= 0.99;
                 jorge.fuel = 0;
             }
 
-            // Mantener a Jorge en pantalla horizontalmente
             jorge.x = Math.max(jorge.width/2, Math.min(canvas.width - jorge.width/2, jorge.x));
-            
-            // Jorge se mantiene en la parte baja de la pantalla
             jorge.y = Math.max(canvas.height * 0.7, Math.min(canvas.height - jorge.height/2 - 10, jorge.y));
 
-            // Puntuación basada en supervivencia y velocidad
-            score += Math.floor(jorge.speed * 0.5 + 0.5); // Puntuación más lenta
+            score += Math.floor(jorge.speed * 0.5 + 0.5);
         }
 
         function spawnObstacle() {
-            if (Math.random() < 0.004 + gameTime * 0.000002) { // Frecuencia muy reducida
+            if (Math.random() < 0.004 + gameTime * 0.000002) {
                 obstacles.push({
                     x: Math.random() * (canvas.width - 60) + 30,
                     y: -30,
                     width: 25 + Math.random() * 15,
                     height: 25 + Math.random() * 15,
-                    speed: 0.8 + Math.random() * 1 + gameTime * 0.002, // Velocidad muy reducida
+                    speed: 0.8 + Math.random() * 1 + gameTime * 0.002,
                     type: Math.random() < 0.7 ? 'rock' : 'oil'
                 });
             }
         }
 
         function spawnEnemy() {
-            if (Math.random() < 0.003 + gameTime * 0.000001) { // Frecuencia muy reducida
+            if (Math.random() < 0.003 + gameTime * 0.000001) {
                 enemies.push({
                     x: Math.random() * (canvas.width - 50) + 25,
                     y: -50,
                     width: 28,
                     height: 45,
-                    speed: 1 + Math.random() * 1.2 + gameTime * 0.004, // Velocidad muy reducida
-                    swerveOffset: Math.random() * 0.5 - 0.25, // Menos errático
-                    swerveSpeed: 0.01 + Math.random() * 0.015 // Más lento
+                    speed: 1 + Math.random() * 1.2 + gameTime * 0.004,
+                    swerveOffset: Math.random() * 0.5 - 0.25,
+                    swerveSpeed: 0.01 + Math.random() * 0.015
                 });
             }
         }
 
         function updateObstacles() {
             obstacles = obstacles.filter(obstacle => {
-                obstacle.y += obstacle.speed + jorge.speed * 0.3; // Velocidad reducida
+                obstacle.y += obstacle.speed + jorge.speed * 0.3;
                 
-                // Efectos especiales del petróleo
                 if (obstacle.type === 'oil') {
                     if (Math.random() < 0.2) {
                         particles.push({
@@ -487,19 +460,16 @@
 
         function updateEnemies() {
             enemies = enemies.filter(enemy => {
-                enemy.y += enemy.speed + jorge.speed * 0.3; // Velocidad reducida
-                
-                // Movimiento serpenteante más suave
+                enemy.y += enemy.speed + jorge.speed * 0.3;
                 enemy.x += Math.sin(enemy.y * enemy.swerveSpeed) * enemy.swerveOffset;
                 enemy.x = Math.max(20, Math.min(canvas.width - 40, enemy.x));
-                
                 return enemy.y < canvas.height + 50;
             });
         }
 
         function updateRoadLines() {
             roadLines.forEach(line => {
-                line.y += 1.5 + jorge.speed * 0.4; // Velocidad del fondo reducida
+                line.y += 1.5 + jorge.speed * 0.4;
                 if (line.y > canvas.height) {
                     line.y = -30;
                 }
@@ -523,15 +493,12 @@
                 height: jorge.height
             };
 
-            // Colisiones con obstáculos
             for (let obstacle of obstacles) {
                 if (rectanglesCollide(jorgeRect, obstacle)) {
                     if (obstacle.type === 'oil') {
-                        // El petróleo hace que Jorge patine pero de forma más controlable
                         jorge.turnSpeed += (Math.random() - 0.5) * 2;
-                        jorge.speed *= 1.02; // Acelera muy poco
+                        jorge.speed *= 1.02;
                         createCrashParticles(jorge.x, jorge.y, '#ffcc00');
-                        // Remover el obstáculo después del contacto con petróleo
                         obstacles.splice(obstacles.indexOf(obstacle), 1);
                     } else {
                         endGame();
@@ -540,7 +507,6 @@
                 }
             }
 
-            // Colisiones con enemigos
             for (let enemy of enemies) {
                 if (rectanglesCollide(jorgeRect, enemy)) {
                     endGame();
@@ -604,19 +570,16 @@
         function drawObstacles() {
             obstacles.forEach(obstacle => {
                 if (obstacle.type === 'rock') {
-                    // Rocas con colores de Boca
-                    ctx.fillStyle = '#001a40'; // Azul oscuro
+                    ctx.fillStyle = '#001a40';
                     ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-                    ctx.fillStyle = '#003f7f'; // Azul Boca
+                    ctx.fillStyle = '#003f7f';
                     ctx.fillRect(obstacle.x + 2, obstacle.y + 2, obstacle.width - 4, obstacle.height - 4);
                 } else {
-                    // Petróleo con toque amarillo
                     ctx.fillStyle = '#333300';
                     ctx.beginPath();
                     ctx.ellipse(obstacle.x + obstacle.width/2, obstacle.y + obstacle.height/2, 
                                obstacle.width/2, obstacle.height/2, 0, 0, 2 * Math.PI);
                     ctx.fill();
-                    // Borde amarillo
                     ctx.strokeStyle = '#ffcc00';
                     ctx.lineWidth = 2;
                     ctx.stroke();
@@ -626,22 +589,19 @@
 
         function drawEnemies() {
             enemies.forEach(enemy => {
-                // Enemigos con colores opuestos a Boca
-                ctx.fillStyle = '#cc0000'; // Rojo (anti-Boca)
+                ctx.fillStyle = '#cc0000';
                 ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
                 
-                // Detalles del enemigo
                 ctx.fillStyle = '#990000';
                 ctx.fillRect(enemy.x + 2, enemy.y + 2, enemy.width - 4, 8);
                 
-                // Ventanas
                 ctx.fillStyle = '#000000';
                 ctx.fillRect(enemy.x + 3, enemy.y + 12, enemy.width - 6, 8);
             });
         }
 
         function drawRoadLines() {
-            ctx.fillStyle = '#ffcc00'; // Líneas amarillas de Boca
+            ctx.fillStyle = '#ffcc00';
             ctx.shadowColor = '#ffcc00';
             ctx.shadowBlur = 5;
             roadLines.forEach(line => {
@@ -672,7 +632,6 @@
             document.getElementById('survivalTime').textContent = Math.floor(gameTime / 1000);
             document.getElementById('gameOver').style.display = 'block';
             
-            // Parar música
             currentOscillators.forEach(osc => {
                 try { osc.stop(); } catch(e) {}
             });
@@ -688,7 +647,6 @@
             lastTime = currentTime;
             gameTime += deltaTime;
 
-            // Actualizar juego
             updateJorge(deltaTime);
             spawnObstacle();
             spawnEnemy();
@@ -698,10 +656,30 @@
             updateParticles();
             checkCollisions();
 
-            // Limpiar canvas con gradiente de Boca
             const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
             gradient.addColorStop(0, '#003f7f');
             gradient.addColorStop(0.5, '#002050');
             gradient.addColorStop(1, '#003f7f');
             ctx.fillStyle = gradient;
-            ctx.
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            drawRoadLines();
+            drawObstacles();
+            drawEnemies();
+            drawJorge();
+            drawParticles();
+
+            updateUI();
+
+            if (jorge.fuel <= 0 && jorge.speed < 0.1) {
+                endGame();
+                return;
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        initRoadLines();
+    </script>
+</body>
+</html>
