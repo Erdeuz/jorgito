@@ -376,10 +376,10 @@
 
         function updateJorge(deltaTime) {
             if (keys.left) {
-                jorge.x -= 4;
+                jorge.x -= 8;
                 jorge.angle = Math.max(jorge.angle - 1.5, -10);
             } else if (keys.right) {
-                jorge.x += 4;
+                jorge.x += 8;
                 jorge.angle = Math.min(jorge.angle + 1.5, 10);
             } else {
                 jorge.angle *= 0.9;
