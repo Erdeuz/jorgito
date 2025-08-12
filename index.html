@@ -376,10 +376,10 @@
 
         function updateJorge(deltaTime) {
             if (keys.left) {
-                jorge.x -= 2;
+                jorge.x -= 4;
                 jorge.angle = Math.max(jorge.angle - 1.5, -10);
             } else if (keys.right) {
-                jorge.x += 2;
+                jorge.x += 4;
                 jorge.angle = Math.min(jorge.angle + 1.5, 10);
             } else {
                 jorge.angle *= 0.9;
@@ -416,7 +416,7 @@
                     y: -30,
                     width: 25 + Math.random() * 15,
                     height: 25 + Math.random() * 15,
-                    speed: 0.8 + Math.random() * 1 + gameTime * 0.002,
+                    speed: 0.7 + Math.random() * 1 + gameTime * 0.002,
                     type: Math.random() < 0.7 ? 'rock' : 'oil'
                 });
             }
@@ -497,7 +497,7 @@
                 if (rectanglesCollide(jorgeRect, obstacle)) {
                     if (obstacle.type === 'oil') {
                         jorge.turnSpeed += (Math.random() - 0.5) * 2;
-                        jorge.speed *= 1.22;
+                        jorge.speed *= 1.02;
                         createCrashParticles(jorge.x, jorge.y, '#ffcc00');
                         obstacles.splice(obstacles.indexOf(obstacle), 1);
                     } else {
