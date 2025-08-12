@@ -460,7 +460,7 @@
 
         function updateEnemies() {
             enemies = enemies.filter(enemy => {
-                enemy.y += enemy.speed + jorge.speed * 0.2;
+                enemy.y += enemy.speed + jorge.speed * 0.1;
                 enemy.x += Math.sin(enemy.y * enemy.swerveSpeed) * enemy.swerveOffset;
                 enemy.x = Math.max(20, Math.min(canvas.width - 40, enemy.x));
                 return enemy.y < canvas.height + 50;
